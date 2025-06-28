@@ -1,13 +1,13 @@
-require('dotenv').config(); 
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); 
+const cors = require('cors');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json()); 
+app.use(express.json());
 app.use(cors()); // อนุญาต CORS สำหรับทุก Origin (สำหรับการพัฒนา)
 
 // เชื่อมต่อกับ MongoDB
@@ -18,13 +18,15 @@ mongoose.connect(process.env.MONGO_URI)
 // กำหนด Order Schema (โครงสร้างข้อมูลของออเดอร์ใน MongoDB)
 const orderSchema = new mongoose.Schema({
     items: [{
-        name: String,
-        price: Number,
-        qty: Number
+        // แก้ไขตรงนี้: เพิ่ม nameTh และ nameEn เข้าไปใน Schema
+        nameTh: { type: String, required: true },
+        nameEn: { type: String, required: true },
+        price: { type: Number, required: true },
+        qty: { type: Number, required: true }
     }],
     pickupTime: String,
     note: String,
-    time: { type: Date, default: Date.now }, 
+    time: { type: Date, default: Date.now },
     status: { type: String, default: 'pending' } // 'pending' หรือ 'completed'
 });
 
@@ -35,6 +37,8 @@ const Order = mongoose.model('Order', orderSchema);
 // 1. POST /api/orders: รับออเดอร์ใหม่จากลูกค้า
 app.post('/api/orders', async (req, res) => {
     try {
+        // Mongoose จะแมป req.body เข้ากับ Schema โดยอัตโนมัติ
+        // ตรวจสอบว่า req.body.items แต่ละตัวมี nameTh, nameEn, price, qty ครบถ้วน
         const newOrder = new Order(req.body);
         await newOrder.save();
         res.status(201).json({ message: 'Order received successfully!', order: newOrder });
@@ -59,7 +63,7 @@ app.get('/api/admin/orders', async (req, res) => {
 app.put('/api/admin/orders/:id/status', async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body; 
+        const { status } = req.body;
 
         if (!['pending', 'completed'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status provided.' });
